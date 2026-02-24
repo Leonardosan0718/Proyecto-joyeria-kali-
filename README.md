@@ -1,4 +1,4 @@
-# Joyería Digital (Joyeria Kaligrafi) - Sistema de Navegación por Estilos Estéticos
+# Joyería Digital (Joyeria Kaligrafi)  - Sistema de Navegación por Estilos Estéticos
 
 ## 📌 Visión General del Proyecto
 [cite_start]Este proyecto forma parte del **Proyecto Integrador Dual**. Consiste en una plataforma de comercio electrónico especializada en joyería, diseñada para resolver la dificultad de localización de productos específicos mediante un sistema de **filtrado por estilos estéticos** (Minimalista, Vintage, Bohemio).
