@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from typing import List
+from fastapi.middleware.cors import CORSMiddleware
 import pyodbc
 
 app = FastAPI()
@@ -47,3 +48,12 @@ def obtener_por_estilo(estilo_nombre: str):
         return {"mensaje": f"Próximamente filtrados para {estilo_nombre}"}
     except Exception as e:
         return {"error": str(e)}
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
