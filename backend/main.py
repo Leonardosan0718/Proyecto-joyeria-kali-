@@ -2,8 +2,18 @@ from fastapi import FastAPI
 from typing import List
 from fastapi.middleware.cors import CORSMiddleware
 import pyodbc
+from pydantic import BaseModel
 
 app = FastAPI()
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 conn_str = (
     "Driver={ODBC Driver 17 for SQL Server};"
@@ -11,6 +21,11 @@ conn_str = (
     "Database=Joyeria;"
     "Trusted_Connection=yes;"
 )
+
+
+class LogData(BaseModel):
+    estilo: str
+    accion: str
 
 @app.get("/productos")
 def obtener_productos():
@@ -37,6 +52,23 @@ def obtener_productos():
     except Exception as e:
         return {"error": str(e)}
 
+@app.post("/logs")
+async def crear_log(data: LogData):
+    try:
+        
+        conn = pyodbc.connect(conn_str)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO LogsInteraccion (EstiloConsultado, TipoAccion) VALUES (?, ?)",
+            (data.estilo, data.accion)
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "Log registrado con éxito"}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/productos/estilo/{estilo_nombre}")
 def obtener_por_estilo(estilo_nombre: str):
     try:
@@ -48,12 +80,3 @@ def obtener_por_estilo(estilo_nombre: str):
         return {"mensaje": f"Próximamente filtrados para {estilo_nombre}"}
     except Exception as e:
         return {"error": str(e)}
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"], 
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)

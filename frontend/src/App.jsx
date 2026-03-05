@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import axios from 'axios'
 
 function App() {
-  const [productos, setProductos] = useState([]) // Todos los productos
-  const [filtrados, setFiltrados] = useState([]) // Los que se muestran
+  const [productos, setProductos] = useState([]) 
+  const [filtrados, setFiltrados] = useState([]) 
   const [estiloSeleccionado, setEstiloSeleccionado] = useState('Todos')
 
   useEffect(() => {
@@ -15,18 +15,24 @@ function App() {
       .catch(err => console.error("Error:", err))
   }, [])
 
-  
   const filtrarPorEstilo = (estilo) => {
     setEstiloSeleccionado(estilo)
+    
+    
     if (estilo === 'Todos') {
       setFiltrados(productos)
     } else {
       const resultado = productos.filter(p => p.estilo === estilo)
       setFiltrados(resultado)
     }
+
     
-    
-    console.log(`El usuario está interesado en el estilo: ${estilo}`)
+    axios.post('http://127.0.0.1:8000/logs', {
+      estilo: estilo,
+      accion: 'Filtro'
+    })
+    .then(res => console.log("Log guardado en SQL:", res.data))
+    .catch(err => console.error("Error al guardar log:", err))
   }
 
   return (
