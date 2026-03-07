@@ -41,6 +41,12 @@ El sistema está instrumentado para registrar eventos en una tabla de auditoría
 * **Hito 2 (Actual):** MVP funcional con conectividad completa (Frontend-API-DB).
 * **Semana 10:** Finalización de funcionalidad core e inicio de recolección de datos.
 * **Semana 12:** Análisis de resultados y entrega de reporte final.
+  
+## 🚀 Guía de Inicio Rápido
+
+1. **Base de Datos:** Ejecutar el script en `/database` sobre SQL Server.
+2. **Backend:** ```bash
+   cd backend && pip install -r requirements.txt && python main.py
 
 ---
 **Autor:** [Pineda Martinez Leonardo Said]
