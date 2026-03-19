@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react'
 import axios from 'axios'
+import Swal from 'sweetalert2'
 
 function App() {
   const [productos, setProductos] = useState([]) 
   const [filtrados, setFiltrados] = useState([]) 
   const [estiloSeleccionado, setEstiloSeleccionado] = useState('Todos')
   
+  
+  const [sessionId] = useState(() => 'SES-' + Math.random().toString(36).substr(2, 9).toUpperCase());
   
   const [carrito, setCarrito] = useState([])
   const [carritoAbierto, setCarritoAbierto] = useState(false)
@@ -33,11 +36,12 @@ function App() {
     return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(valor);
   };
 
-  
+
   const agregarAlCarrito = (joya) => {
     setCarrito([...carrito, joya]);
     setCarritoAbierto(true); 
     axios.post('http://127.0.0.1:8000/logs', {
+      sesion_id: sessionId,
       estilo: joya.estilo,
       accion: `Agregó al carrito: ${joya.nombre}`
     }).catch(err => console.error(err));
@@ -49,24 +53,65 @@ function App() {
     setCarrito(nuevoCarrito);
   };
 
-  const finalizarCompra = () => {
-    if (carrito.length === 0) return alert("Tu bolsa está vacía");
-    alert("✨ ¡Pedido recibido! Gracias por elegir Joyería Kaligrafi.");
-    setCarrito([]); 
-    setCarritoAbierto(false); 
+const finalizarCompra = () => {
+    if (carrito.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Tu bolsa está vacía',
+        text: 'Explora nuestro catálogo y agrega una joya antes de continuar.',
+        confirmButtonColor: '#8d6e63',
+        background: '#fdfcfb',
+        color: '#3e2723'
+      });
+      return;
+    }
+
+    Swal.fire({
+      icon: 'success',
+      title: '¡Pedido recibido!',
+      text: 'Gracias por elegir Joyería Kaligrafi. Tus piezas están siendo procesadas.',
+      confirmButtonColor: '#3e2723',
+      background: '#fdfcfb',
+      color: '#3e2723',
+      iconColor: '#8d6e63'
+    }).then(() => {
+      setCarrito([]); 
+      setCarritoAbierto(false); 
+    });
   };
 
   const totalCarrito = carrito.reduce((sum, item) => sum + item.precio, 0);
 
+ 
+  const aplicarFiltro = (estilo) => {
+    setEstiloSeleccionado(estilo);
+    setFiltrados(estilo === 'Todos' ? productos : productos.filter(p => p.estilo === estilo));
+
+    axios.post('http://127.0.0.1:8000/logs', {
+      sesion_id: sessionId,
+      estilo: estilo,
+      accion: estilo === 'Todos' ? 'Limpió filtros / Reinició búsqueda' : `Aplicó filtro: ${estilo}`
+    }).catch(err => console.error(err));
+  };
+
   useEffect(() => {
     axios.get('http://127.0.0.1:8000/productos')
-      .then(res => { setProductos(res.data); setFiltrados(res.data); })
+      .then(res => { 
+        setProductos(res.data); 
+        setFiltrados(res.data); 
+        
+        
+        axios.post('http://127.0.0.1:8000/logs', {
+          sesion_id: sessionId,
+          estilo: 'Todos',
+          accion: 'Inició sesión / Cargó catálogo'
+        }).catch(err => console.error("Error al registrar inicio", err));
+      })
       .catch(err => console.error(err))
-  }, [])
+  }, [sessionId])
 
   return (
     <div style={{ width: '100vw', minHeight: '100vh', backgroundColor: '#fdfcfb', fontFamily: "'Playfair Display', serif", display: 'flex', flexDirection: 'column', position: 'relative', overflowX: 'hidden' }}>
-      
       
       {carritoAbierto && (
         <div 
@@ -78,9 +123,8 @@ function App() {
         />
       )}
 
-      
       <div style={{
-        position: 'fixed', top: 0, right: carritoAbierto ? 0 : '-450px', width: '400px', height: '100vh',
+        position: 'fixed', top: 0, right: carritoAbierto ? 0 : '-450px', width: '400px', height: '100vh', maxWidth: '100vw',
         backgroundColor: '#fff', boxShadow: '-10px 0 30px rgba(0,0,0,0.1)', zIndex: 100,
         transition: 'right 0.4s cubic-bezier(0.4, 0, 0.2, 1)', padding: '40px', display: 'flex', flexDirection: 'column', boxSizing: 'border-box'
       }}>
@@ -118,8 +162,7 @@ function App() {
         </div>
       </div>
 
-      
-      <nav style={{ padding: '20px 60px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', position: 'sticky', top: 0, zIndex: 80 }}>
+      <nav style={{ padding: '20px 40px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', boxShadow: '0 2px 10px rgba(0,0,0,0.02)', position: 'sticky', top: 0, zIndex: 80, flexWrap: 'wrap', gap: '15px' }}>
         <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#3e2723', letterSpacing: '2px' }}>KALIGRAFI</div>
         <div 
           onClick={() => setCarritoAbierto(true)}
@@ -133,23 +176,24 @@ function App() {
         </div>
       </nav>
 
-      
       <main style={{ padding: '60px 20px', flex: 1 }}>
         <header style={{ textAlign: 'center', marginBottom: '60px' }}>
-          <h1 style={{ fontSize: '4rem', color: '#3e2723', margin: 0, fontWeight: '400' }}>Catálogo Exclusivo</h1>
+          <h1 style={{ fontSize: 'clamp(2.5rem, 5vw, 4rem)', color: '#3e2723', margin: 0, fontWeight: '400' }}>Catálogo Exclusivo</h1>
           <div style={{ width: '60px', height: '3px', background: '#8d6e63', margin: '20px auto' }}></div>
         </header>
 
         
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '70px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '70px', flexWrap: 'wrap' }}>
           {['Todos', 'Minimalista', 'Vintage', 'Bohemio'].map(estilo => (
-            <button key={estilo} onClick={() => { setEstiloSeleccionado(estilo); setFiltrados(estilo === 'Todos' ? productos : productos.filter(p => p.estilo === estilo)); }}
-              style={{ padding: '12px 35px', cursor: 'pointer', border: '1px solid #8d6e63', borderRadius: '30px', backgroundColor: estiloSeleccionado === estilo ? '#8d6e63' : '#fff', color: estiloSeleccionado === estilo ? '#fff' : '#8d6e63', fontWeight: '600', transition: '0.3s' }}> {estilo} </button>
+            <button key={estilo} onClick={() => aplicarFiltro(estilo)}
+              style={{ padding: '12px 35px', cursor: 'pointer', border: '1px solid #8d6e63', borderRadius: '30px', backgroundColor: estiloSeleccionado === estilo ? '#8d6e63' : '#fff', color: estiloSeleccionado === estilo ? '#fff' : '#8d6e63', fontWeight: '600', transition: '0.3s' }}> 
+              {estilo} 
+            </button>
           ))}
         </div>
 
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: '50px', maxWidth: '1400px', margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '50px', maxWidth: '1400px', margin: '0 auto' }}>
           {filtrados.map(joya => (
             <div key={joya.id} style={{ backgroundColor: '#fff', padding: '25px', borderRadius: '24px', boxShadow: '0 15px 45px rgba(0,0,0,0.04)', transition: '0.3s' }}>
               <div style={{ width: '100%', height: '350px', borderRadius: '18px', overflow: 'hidden', marginBottom: '25px' }}>
@@ -158,11 +202,11 @@ function App() {
               <span style={{ color: '#a1887f', fontSize: '0.8rem', fontWeight: 'bold', textTransform: 'uppercase' }}>{joya.estilo}</span>
               <h2 style={{ color: '#3e2723', margin: '10px 0', fontSize: '1.9rem' }}>{joya.nombre}</h2>
               <p style={{ color: '#757575', fontSize: '1rem', lineHeight: '1.6' }}>{joya.material} — {joya.descripcion}</p>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '30px', flexWrap: 'wrap', gap: '10px' }}>
                 <span style={{ fontSize: '2rem', fontWeight: 'bold', color: '#3e2723' }}>{formatearPrecio(joya.precio)}</span>
                 <button 
                   onClick={() => agregarAlCarrito(joya)}
-                  style={{ padding: '14px 28px', background: '#3e2723', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s' }}
+                  style={{ padding: '14px 28px', background: '#3e2723', color: '#fff', border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', transition: '0.3s', flex: '1 1 auto' }}
                 >
                   Agregar a bolsa
                 </button>
@@ -172,8 +216,7 @@ function App() {
         </div>
       </main>
 
-      
-      <footer style={{ backgroundColor: '#3e2723', color: '#fdfcfb', padding: '80px 60px 30px 60px' }}>
+      <footer style={{ backgroundColor: '#3e2723', color: '#fdfcfb', padding: '80px 40px 30px 40px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '50px', maxWidth: '1200px', margin: '0 auto' }}>
           <div><h3 style={{ fontSize: '2rem', marginBottom: '20px' }}>Kaligrafi</h3><p style={{ opacity: 0.7 }}>Piezas con alma diseñadas para perdurar. La excelencia de la joyería en un solo lugar.</p></div>
           <div><h4 style={{ textTransform: 'uppercase', marginBottom: '20px' }}>Atención</h4><p style={{ opacity: 0.7 }}>FAQ | Envíos | Cuidado de Joyas</p></div>

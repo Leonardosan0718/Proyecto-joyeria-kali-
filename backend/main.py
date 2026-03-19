@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -22,8 +21,8 @@ conn_str = (
     "Trusted_Connection=yes;"
 )
 
-
 class LogData(BaseModel):
+    sesion_id: str  
     estilo: str
     accion: str
 
@@ -55,19 +54,20 @@ def obtener_productos():
 @app.post("/logs")
 async def crear_log(data: LogData):
     try:
-        
         conn = pyodbc.connect(conn_str)
         cursor = conn.cursor()
+        
+        
         cursor.execute(
-            "INSERT INTO LogsInteraccion (EstiloConsultado, TipoAccion) VALUES (?, ?)",
-            (data.estilo, data.accion)
+            "INSERT INTO LogsInteraccion (Sesion_ID, EstiloConsultado, TipoAccion) VALUES (?, ?, ?)",
+            (data.sesion_id, data.estilo, data.accion)
         )
+        
         conn.commit()
         conn.close()
         return {"status": "Log registrado con éxito"}
     except Exception as e:
         return {"error": str(e)}
-
 
 @app.get("/productos/estilo/{estilo_nombre}")
 def obtener_por_estilo(estilo_nombre: str):
